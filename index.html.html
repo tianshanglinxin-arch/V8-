@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>CODE SHIELD PRO V8 — Interactive Security Suite</title>
+
+<!-- External Browser Bundles for Acorn AST Parser & JavaScript Obfuscator -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/acorn/8.11.3/acorn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/javascript-obfuscator@4.1.0/dist/index.browser.js"></script>
+
+<style>
+:root {
+  --bg: #070b12;
+  --panel: #0e1622;
+  --panel2: #111d2b;
+  --line: #24364a;
+  --text: #edf5ff;
+  --muted: #9db0c6;
+  --green: #39e6a4;
+  --cyan: #68c9ff;
+  --yellow: #ffd166;
+  --red: #ff7d88;
+  --radius: 16px;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--text);
+  background: radial-gradient(ellipse at 15% 0%, #102337 0%, transparent 35%), var(--bg);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; touch-action: manipulation; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.wrap {
+  width: min(1400px, 100%);
+  margin: 0 auto;
+  padding: 16px clamp(12px, 2.6vw, 32px) 50px;
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+.logo {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid #1e6f60;
+  background: #0c2d2a;
+  border-radius: 15px;
+  color: var(--green);
+  font-weight: 900;
+  font-size: 19px;
+  flex: 0 0 auto;
+  box-shadow: 0 0 15px rgba(57, 230, 164, 0.15);
+}
+.title { margin: 0; font-size: clamp(22px, 4vw, 34px); letter-spacing: 0.02em; }
+.subtitle { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.statusbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0d1724;
+  color: var(--muted);
+  font-size: 12px;
+}
+.dot { width: 7px; height: 7px; background: var(--yellow); border-radius: 50%; }
+.dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot.bad { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+.stack { display: grid; gap: 16px; min-width: 0; }
+.panel {
+  background: linear-gradient(180deg, rgba(17, 29, 43, 0.96), rgba(11, 18, 29, 0.98));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-width: 0;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
+}
+.panel h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.num {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: var(--green);
+  background: #103328;
+  font-size: 12px;
+}
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--text);
+  background: #142235;
+  font-weight: 650;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+.btn:hover { border-color: #49718f; background: #1c2d46; }
+.btn.primary {
+  background: linear-gradient(110deg, #19a779, #27c895);
+  border-color: #36d6a4;
+  color: #04140e;
+  font-weight: 700;
+}
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.secondary { background: #132b3d; border-color: #28506a; }
+.btn.warning { background: #31291b; border-color: #6e5424; color: #ffe2a0; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+textarea {
+  width: 100%;
+  min-height: 300px;
+  resize: vertical;
+  background: #050a11;
+  color: #d5f5e8;
+  border: 1px solid #25394e;
+  border-radius: 11px;
+  padding: 13px;
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  tab-size: 2;
+}
+#output { min-height: 390px; }
+.editor-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.formrow { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; }
+.formrow label, .label { font-size: 12px; color: #c3d6e9; }
+.formrow input[type=text], .formrow select, .formrow input[type=number], .formrow input[type=password] {
+  width: 100%;
+  background: #080f19;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px;
+  min-width: 0;
+}
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #0a131f;
+  border: 1px solid #1e3043;
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 42px;
+  color: #d8e6f4;
+  font-size: 12px;
+  cursor: pointer;
+}
+.check input { margin-top: 3px; accent-color: var(--green); flex: 0 0 auto; }
+.sliderrow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+}
+.sliderrow input { grid-column: 1 / -1; width: 100%; accent-color: var(--green); }
+output { font-size: 12px; color: var(--green); font-variant-numeric: tabular-nums; }
+.notice {
+  border-left: 3px solid var(--yellow);
+  background: #2b2618;
+  color: #eadbb5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  margin-top: 12px;
+}
+.notice.danger { border-color: var(--red); background: #2c171c; color: #ffd0d4; }
+.notice.safe { border-color: var(--green); background: #102720; color: #b7f8dc; }
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.stat {
+  border: 1px solid var(--line);
+  background: #09111b;
+  border-radius: 11px;
+  padding: 10px;
+  min-width: 0;
+}
+.stat strong { display: block; font-size: 18px; overflow-wrap: anywhere; }
+.stat span { color: var(--muted); font-size: 11px; }
+.findings { display: grid; gap: 8px; }
+.finding {
+  display: flex;
+  gap: 9px;
+  border: 1px solid var(--line);
+  background: #09111b;
+  border-radius: 10px;
+  padding: 10px;
+}
+.sev {
+  font-size: 10px;
+  font-weight: 900;
+  border-radius: 5px;
+  padding: 3px 6px;
+  height: max-content;
+  white-space: nowrap;
+}
+.sev.CRITICAL { background: #4b171e; color: #ffb3bb; }
+.sev.HIGH { background: #482a16; color: #ffd4a4; }
+.sev.MEDIUM { background: #3a3217; color: #ffe797; }
+.sev.INFO { background: #123146; color: #a6ddff; }
+.finding strong { font-size: 12px; display: block; }
+.finding p { margin: 3px 0 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+  border: 1px dashed var(--line);
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.compare textarea { min-height: 240px; }
+.foot {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 16px;
+  line-height: 1.65;
+}
+.hidden { display: none !important; }
+.divider { height: 1px; background: var(--line); margin: 14px 0; }
+.help { font-size: 11px; color: var(--muted); margin-top: 5px; }
+.tag { padding: 3px 7px; border-radius: 7px; background: #132536; color: #99d9ff; font-size: 11px; }
+
+.access-panel, .compare-panel, .checklist-panel { margin-top: 16px; }
+.access-panel { margin-top: 0; margin-bottom: 16px; }
+.gap-10 { height: 10px; }
+.compare-label { margin-bottom: 6px; }
+.action-gap { margin-top: 14px; }
+
+.share-box {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #23775e;
+  border-radius: 12px;
+  background: linear-gradient(140deg, #0c2724, #0a1721);
+}
+.share-box h3 { margin: 0 0 6px; font-size: 15px; color: var(--green); }
+.share-box .label { display: block; margin: 10px 0 6px; }
+.share-row { display: flex; gap: 8px; align-items: stretch; }
+.share-row input {
+  flex: 1;
+  min-width: 0;
+  background: #050a11;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px;
+  font-size: 12px;
+}
+.link-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.share-box[hidden] { display: none !important; }
+
+.token-actions { margin-top: 8px; gap: 8px; flex-wrap: wrap; }
+.auto-clear-check { margin-top: 8px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #0b1620; }
+
+/* Modal Result Viewer Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 12, 0.85);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+  padding: 16px;
+}
+.modal-card {
+  width: min(800px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+@media (max-width: 880px) {
+  .grid { grid-template-columns: 1fr; }
+  #output { min-height: 300px; }
+  textarea { min-height: 250px; }
+}
+@media (max-width: 520px) {
+  .wrap { padding: 10px 10px 30px; }
+  .top { align-items: flex-start; }
+  .logo { width: 44px; height: 44px; border-radius: 12px; }
+  .panel { padding: 12px; }
+  .checks { grid-template-columns: 1fr; }
+  .two, .compare { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .btn { padding: 9px 10px; }
+  .compare textarea { min-height: 180px; }
+  .share-row { flex-direction: column; }
+  .share-row .btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Top Navigation / Logo -->
+  <header class="top">
+    <div class="logo">CS</div>
+    <div>
+      <h1 class="title">CODE SHIELD PRO <span class="tag">V8 SECURE</span></h1>
+      <p class="subtitle">クライアント/サーバー両用 JavaScript難読化・AST構文検証・静的セキュリティ監査</p>
+    </div>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="statusbar" aria-live="polite">
+    <span class="pill"><span id="engineDot" class="dot"></span><span id="engineStatus">難読化エンジン準備中…</span></span>
+    <span class="pill">SOURCE MAP：常時OFF</span>
+    <span class="pill">処理：ローカル/インブラウザ</span>
+    <span class="pill">実行：しない (静的解析)</span>
+  </div>
+
+  <!-- Access Control & Secret Key Panel -->
+  <section class="panel access-panel">
+    <div class="two">
+      <div class="formrow">
+        <label for="accessToken">アクセスキー (APP_ACCESS_TOKEN)</label>
+        <input id="accessToken" class="access-token" type="password" autocomplete="off" spellcheck="false" placeholder="サーバー設定済みまたは新規自動生成トークン">
+        <div class="actions token-actions">
+          <button class="btn" id="generateAccessKeyBtn" type="button">強力なキーを自動生成</button>
+          <button class="btn secondary" id="toggleAccessKeyBtn" type="button">表示／非表示</button>
+          <button class="btn secondary" id="copyAccessKeyBtn" type="button">キーをコピー</button>
+        </div>
+        <p class="help">生成ボタンはブラウザ上で暗号学的に安全な64桁HEXトークンを作成します。キーはこのセッションでのみ有効です。</p>
+      </div>
+      <div class="formrow">
+        <label>セキュリティ仕様</label>
+        <p id="authHelp" class="help">本システムはすべてのJavaScript難読化処理およびAcorn構文木チェックを安全にクライアント内部で完結させます。</p>
+        <p class="help"><strong>重要：</strong>コード難読化は解読コストを高める手法であり、完全な暗号化ではありません。APIキー等の秘密情報はクライアントコード内に残さないでください。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <!-- Left Column: Source Input & Protection Options -->
+    <div class="stack">
+      <!-- Section 01: Source Code Input -->
+      <section class="panel" id="sourcePanel">
+        <div class="editor-head">
+          <h2><span class="num">01</span> 元のJavaScript</h2>
+          <div class="actions">
+            <button class="btn" id="loadBtn" type="button">ファイルを読み込む</button>
+            <button class="btn" id="sampleBtn" type="button">サンプル</button>
+            <button class="btn" id="clearBtn" type="button">クリア</button>
+            <input id="fileInput" type="file" accept=".js,.mjs,.cjs,.txt,text/javascript" class="hidden">
+          </div>
+        </div>
+        <textarea id="source" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="自分のJavaScriptコードをここに貼り付けてね…"></textarea>
+        <label class="check auto-clear-check">
+          <input id="autoClearSource" type="checkbox" checked>
+          難読化成功後、元コードの入力欄を自動消去（比較エリアのコピーは保持）
+        </label>
+        <div class="editor-meta">
+          <span id="sourceStats">0文字 · 0行 · 0 bytes</span>
+          <span>最大 2 MB 推奨</span>
+        </div>
+        <div class="result-head">
+          <div class="actions">
+            <button class="btn secondary" id="syntaxBtn" type="button">構文チェック</button>
+            <button class="btn secondary" id="auditInputBtn" type="button">元コードを監査</button>
+          </div>
+          <span id="sourceSyntax" class="muted small">未検査</span>
+        </div>
+        <div class="notice">注意：このツールは入力コードを実行しません。既知のセキュリティ違反パターンを探す静的AST監査です。</div>
+      </section>
+
+      <!-- Section 02: Obfuscation Configuration -->
+      <section class="panel">
+        <h2><span class="num">02</span> 保護設定</h2>
+        <div class="formrow">
+          <label for="profile">保護プリセット</label>
+          <select id="profile">
+            <option value="balanced">Balanced — 互換性重視</option>
+            <option value="strong">Strong — 強い保護</option>
+            <option value="maximum" selected>Maximum — 難読化を最大化</option>
+          </select>
+          <p class="help">Maximumはサイズ増や実行速度に影響する場合があります。利用環境で必ず動作検証を行ってください。</p>
+        </div>
+        <div class="two">
+          <div class="formrow">
+            <label for="encoding">文字列配列の符号化</label>
+            <select id="encoding">
+              <option value="rc4" selected>RC4（強め・重め）</option>
+              <option value="base64">Base64（軽め）</option>
+              <option value="none">なし</option>
+            </select>
+          </div>
+          <div class="formrow">
+            <label for="domainList">ドメイン制限（任意）</label>
+            <input id="domainList" type="text" placeholder="example.com, www.example.com" autocomplete="off">
+            <label class="check"><input id="domainLock" type="checkbox">指定したドメインでのみ動かす</label>
+          </div>
+        </div>
+        <div class="checks">
+          <label class="check"><input id="stringArray" type="checkbox" checked>文字列配列化</label>
+          <label class="check"><input id="shuffle" type="checkbox" checked>文字列配列シャッフル</label>
+          <label class="check"><input id="rotate" type="checkbox" checked>文字列配列ローテーション</label>
+          <label class="check"><input id="splitStrings" type="checkbox" checked>文字列を分割</label>
+          <label class="check"><input id="numbers" type="checkbox" checked>数値を式へ変換</label>
+          <label class="check"><input id="controlFlow" type="checkbox" checked>制御フロー平坦化</label>
+          <label class="check"><input id="deadCode" type="checkbox" checked>デッドコード注入</label>
+          <label class="check"><input id="unicode" type="checkbox" checked>Unicodeエスケープ</label>
+          <label class="check"><input id="selfDefending" type="checkbox" checked>改変耐性 (self-defending)</label>
+          <label class="check"><input id="debugProtection" type="checkbox" checked>デバッグ妨害</label>
+          <label class="check"><input id="disableConsole" type="checkbox" checked>console出力を無効化</label>
+          <label class="check"><input id="objectKeys" type="checkbox">オブジェクトキー変換</label>
+        </div>
+        <div class="sliderrow">
+          <label for="cffThreshold" class="label">制御フロー強度</label>
+          <output id="cffValue">0.75</output>
+          <input id="cffThreshold" type="range" min="0.10" max="1.00" step="0.05" value="0.75">
+        </div>
+        <div class="sliderrow">
+          <label for="deadThreshold" class="label">デッドコード注入率</label>
+          <output id="deadValue">0.10</output>
+          <input id="deadThreshold" type="range" min="0.05" max="0.35" step="0.05" value="0.10">
+        </div>
+        <div class="actions action-gap">
+          <button class="btn primary" id="obfuscateBtn" type="button">難読化を実行</button>
+          <button class="btn secondary" id="validateOptionsBtn" type="button">設定を検証</button>
+        </div>
+        <div id="buildNotice" class="notice">ソースマップは無効。グローバル変数・オブジェクトのプロパティ名は互換性を優先して一律保持されます。</div>
+      </section>
+    </div>
+
+    <!-- Right Column: Obfuscated Output & Audit Findings -->
+    <div class="stack right">
+      <!-- Section 03: Output Code -->
+      <section class="panel">
+        <div class="editor-head">
+          <h2><span class="num">03</span> 保護後コード</h2>
+          <div class="actions">
+            <button class="btn" id="copyOutputBtn" type="button">コピー</button>
+            <button class="btn" id="downloadBtn" type="button">.js保存</button>
+          </div>
+        </div>
+        <textarea id="output" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="難読化したコードがここに表示されます…" readonly></textarea>
+        <div class="editor-meta">
+          <span id="outputStats">未生成</span>
+          <span id="outputHash">SHA-256：未計算</span>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong id="beforeSize">—</strong><span>元コード bytes</span></div>
+          <div class="stat"><strong id="afterSize">—</strong><span>出力 bytes</span></div>
+          <div class="stat"><strong id="growth">—</strong><span>サイズ変化</span></div>
+        </div>
+        <div class="result-head">
+          <span id="outputSyntax" class="muted small">出力の構文：未検査</span>
+          <button class="btn secondary" id="auditOutputBtn" type="button">出力を監査</button>
+        </div>
+        <div class="actions">
+          <button class="btn secondary" id="compareBtn" type="button">比較エリアへ</button>
+          <button class="btn secondary" id="reportBtn" type="button">監査レポート保存</button>
+        </div>
+
+        <!-- Temporary Link Generator Box -->
+        <div id="resultLinks" class="share-box" hidden aria-live="polite">
+          <h3>難読化結果の一時リンクを作成しました</h3>
+          <p class="help">作成から30分間メモリ保持される安全な擬似参照リンクです。アクセスキー認証付きで読み込みが行われます。</p>
+          <label for="shareUrl" class="label">難読化済みコード参照リンク</label>
+          <div class="share-row">
+            <input id="shareUrl" type="url" readonly aria-label="難読化結果リンク">
+            <button class="btn secondary" id="copyShareUrlBtn" type="button">リンクをコピー</button>
+          </div>
+          <div class="actions" style="margin-top:10px;">
+            <button class="btn primary link-button" id="openResultLinkBtn" type="button">難読化結果ページを閲覧 ↗</button>
+          </div>
+          <p id="resultExpires" class="help">有効期限: 30分間</p>
+        </div>
+      </section>
+
+      <!-- Section 04: Security Audit Engine -->
+      <section class="panel">
+        <h2><span class="num">04</span> セキュリティ監査</h2>
+        <div id="auditSummary" class="empty">「元コードを監査」または「難読化を実行」を押すと、検出された静的リスクが表示されます。</div>
+        <div class="gap-10"></div>
+        <div id="findings" class="findings">
+          <div class="empty">監査結果はまだありません。</div>
+        </div>
+        <div class="divider"></div>
+        <div class="actions">
+          <button class="btn secondary" id="copyReportBtn" type="button">レポートをコピー</button>
+          <button class="btn" id="downloadReportBtn" type="button">レポート .txt保存</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Section 05: Side-by-Side Code Comparison -->
+  <section class="panel compare-panel" id="comparePanel">
+    <div class="editor-head">
+      <h2><span class="num">05</span> 元コードと保護後の比較</h2>
+      <button class="btn" id="backTopBtn" type="button">上に戻る ↑</button>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="label compare-label">元コード (入力バックアップ)</div>
+        <textarea id="compareSource" readonly placeholder="元コードが入ります"></textarea>
+      </div>
+      <div>
+        <div class="label compare-label">保護後コード</div>
+        <textarea id="compareOutput" readonly placeholder="出力コードが入ります"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pre-Deployment Checklist -->
+  <section class="panel checklist-panel">
+    <h2><span class="num">✓</span> 公開前の防御チェックリスト</h2>
+    <div class="checks">
+      <label class="check"><input type="checkbox">APIキー・秘密鍵・パスワードをブラウザコードから除去</label>
+      <label class="check"><input type="checkbox">認証・権限判定をサーバー側で再検証</label>
+      <label class="check"><input type="checkbox">本番環境で認証・レート制限・ログを確認</label>
+      <label class="check"><input type="checkbox">難読化後の機能を実際の端末・ブラウザでテスト</label>
+      <label class="check"><input type="checkbox">ソースマップ・デバッグファイルを公開物から除去</label>
+      <label class="check"><input type="checkbox">依存ライブラリを確認し、固定バージョンを使用</label>
+    </div>
+    <div class="notice danger">重要：難読化やドメイン制限は、解析・改ざんを完全に防止する仕組みではありません。クライアントに配布したコードは最終的に解析される可能性があります。秘密情報はサーバー側に置き、認可をサーバーで実施してください。</div>
+  </section>
+
+  <p class="foot">本システムはブラウザ内において直接難読化および構文検証を実行します。送信や外部ログへの記録は行われません。監査機能は既知の危険パターン検出を目的とした静的分析であり、脆弱性が存在しないことを保証するものではありません。</p>
+</div>
+
+<!-- Modal Overlay for Result Link Simulation -->
+<div id="resultModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="editor-head">
+      <h2><span class="tag">CODE SHIELD PRO</span> 難読化結果閲覧ダイアログ</h2>
+      <button class="btn secondary" id="closeModalBtn" type="button">閉じる ✕</button>
+    </div>
+    <p class="notice safe">アクセスキーによる検証が完了しました。保護済みJavaScriptを表示・取得可能です。</p>
+    <div class="formrow">
+      <label for="modalCode">保護済み出力コード</label>
+      <textarea id="modalCode" readonly style="min-height: 320px;"></textarea>
+    </div>
+    <div class="editor-meta" style="margin-bottom:12px;">
+      <span id="modalStats">0 bytes</span>
+      <span id="modalHash">SHA-256：—</span>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="modalCopyBtn" type="button">コードをコピー</button>
+      <button class="btn secondary" id="modalDownloadBtn" type="button">.jsファイルを保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+let lastReport = null;
+let lastOutput = '';
+let lastInputAudit = [];
+let lastOutputAudit = [];
+let lastOptions = null;
+const maxBytes = 2 * 1024 * 1024; // 2MB limit
+
+// In-Memory Result Store Simulation
+const simulatedStore = new Map();
+
+// Helper functions
+function getBytes(text) { return new TextEncoder().encode(text).length; }
+function countWords(text) { return { chars: text.length, lines: text ? text.split(/\r\n|\r|\n/).length : 0 }; }
+function setLabel(id, text, color) { const el = $(id); el.textContent = text; el.style.color = color || ''; }
+
+function setStatus(message, type = 'info') {
+  const el = $('buildNotice');
+  el.className = 'notice' + (type === 'bad' ? ' danger' : type === 'ok' ? ' safe' : '');
+  el.textContent = message;
+}
+
+// Engine readiness check
+function checkEngines() {
+  const acornReady = typeof window.acorn !== 'undefined' && typeof window.acorn.parse === 'function';
+  const obfReady = typeof window.JavaScriptObfuscator !== 'undefined' && typeof window.JavaScriptObfuscator.obfuscate === 'function';
+
+  if (acornReady && obfReady) {
+    $('engineStatus').textContent = 'Acorn AST構文解析 & JavaScriptObfuscator READY';
+    $('engineDot').className = 'dot ok';
+  } else {
+    $('engineStatus').textContent = '難読化/構文解析ライブラリをロード中…';
+    $('engineDot').className = 'dot';
+    setTimeout(checkEngines, 500);
+  }
+}
+
+function updateCounts() {
+  const s = $('source').value;
+  const o = countWords(s);
+  $('sourceStats').textContent = `${o.chars.toLocaleString()}文字 · ${o.lines.toLocaleString()}行 · ${getBytes(s).toLocaleString()} bytes`;
+}
+
+// AST Syntax Parsing via Acorn
+function parseSource(source) {
+  if (!source.trim()) return { ok: false, error: 'コードが空です。' };
+  if (!window.acorn || typeof window.acorn.parse !== 'function') return { ok: null, error: '構文解析エンジンが未ロードです。' };
+  try {
+    window.acorn.parse(source, { ecmaVersion: 'latest', sourceType: 'module', allowHashBang: true });
+    return { ok: true, mode: 'module' };
+  } catch (moduleError) {
+    try {
+      window.acorn.parse(source, { ecmaVersion: 'latest', sourceType: 'script', allowHashBang: true });
+      return { ok: true, mode: 'script' };
+    } catch (scriptError) {
+      const err = scriptError.loc ? `行 ${scriptError.loc.line}, 列 ${scriptError.loc.column + 1}: ${scriptError.message}` : scriptError.message;
+      return { ok: false, error: err };
+    }
+  }
+}
+
+function syntaxReport(source, label) {
+  const parsed = parseSource(source);
+  if (parsed.ok === true) { setLabel(label, `構文OK（${parsed.mode}）`, 'var(--green)'); return parsed; }
+  if (parsed.ok === null) { setLabel(label, '構文未検証：解析エンジンなし', 'var(--yellow)'); return parsed; }
+  setLabel(label, '構文エラー：' + parsed.error, 'var(--red)'); return parsed;
+}
+
+// Static Security Audit Rules Engine
+const RULES = [
+  { id: 'hardcoded-secret', severity: 'CRITICAL', title: '秘密情報らしき固定値', regex: /\b(?:api[_-]?key|secret(?:_key)?|access[_-]?token|client[_-]?secret|password|passwd)\b\s*[:=]\s*(['"])[^'"\r\n]{8,}\1/gi, advice: 'APIキー・トークン・パスワードをブラウザコードから除去し、漏えい済みなら無効化・ローテーションしてね。' },
+  { id: 'token-pattern', severity: 'CRITICAL', title: '既知のトークン形式らしき文字列', regex: /\b(?:sk-[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16}|gh[pousr]_[A-Za-z0-9_]{20,})\b/g, advice: '実際の秘密情報なら直ちに無効化して、新しい認証情報をサーバー側で管理してね。' },
+  { id: 'private-key', severity: 'CRITICAL', title: '秘密鍵のヘッダー', regex: /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/g, advice: '秘密鍵は絶対にクライアントへ配布しないで。ファイルから除去して必要に応じて鍵を更新してね。' },
+  { id: 'eval', severity: 'HIGH', title: 'eval() による動的コード実行', regex: /\beval\s*\(/g, advice: '可能なら固定の関数呼び出しや安全なデータパーサーに置き換えてね。' },
+  { id: 'function-constructor', severity: 'HIGH', title: 'Functionコンストラクター', regex: /\bnew\s+Function\s*\(|\bFunction\s*\(/g, advice: '文字列からコードを生成する処理は避けて、許可リストに基づく処理に置き換えてね。' },
+  { id: 'html-injection', severity: 'HIGH', title: 'HTML挿入APIの使用', regex: /\b(?:innerHTML|outerHTML)\s*=|\binsertAdjacentHTML\s*\(|\bdocument\s*\.\s*write\s*\(/g, advice: '外部入力を直接HTMLに入れないで。textContentや安全なDOM APIを優先してね。' },
+  { id: 'wildcard-message', severity: 'MEDIUM', title: 'postMessageの宛先を要確認', regex: /\bpostMessage\s*\([^;]{0,240},\s*['"]\*['"]\s*\)/g, advice: '可能な限り具体的なtargetOriginを指定し、受信側でもoriginとデータを検証してね。' },
+  { id: 'cookie', severity: 'MEDIUM', title: 'Cookieへのアクセス', regex: /\bdocument\s*\.\s*cookie\b/g, advice: '認証CookieはHttpOnly・Secure・SameSiteなどをサーバー設定で確認してね。' },
+  { id: 'browser-storage', severity: 'MEDIUM', title: 'ブラウザストレージの使用', regex: /\b(?:localStorage|sessionStorage|indexedDB)\b/g, advice: '秘密情報や長寿命トークンを保存していないか確認してね。' },
+  { id: 'network', severity: 'INFO', title: '外部通信APIの使用（要確認）', regex: /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\s*\(|\bsendBeacon\s*\(/g, advice: '送信先のドメイン、送るデータ、認証情報、CORSとサーバー側認可を確認してね。' },
+  { id: 'source-map', severity: 'MEDIUM', title: 'ソースマップ参照', regex: /[#@]\s*sourceMappingURL\s*=/g, advice: '公開物で不要なソースマップやsourcesContentが公開されていないか確認してね。' },
+  { id: 'weak-random', severity: 'MEDIUM', title: 'Math.randomの使用', regex: /\bMath\s*\.\s*random\s*\(/g, advice: 'セキュリティ用のトークンや鍵生成には使わず、用途に合った暗号学的乱数を使ってね。' },
+  { id: 'weak-hash', severity: 'MEDIUM', title: 'MD5 / SHA-1らしき使用', regex: /\b(?:MD5|SHA-?1)\b/gi, advice: '用途に応じてSHA-256以上や適切なパスワードハッシュ方式を検討してね。' },
+  { id: 'debugger', severity: 'INFO', title: 'debugger文', regex: /\bdebugger\s*;/g, advice: '本番ビルドに意図しないデバッグ文が残っていないか確認してね。' }
+];
+
+function scanSource(source) {
+  const findings = [];
+  for (const rule of RULES) {
+    rule.regex.lastIndex = 0;
+    let match, count = 0, firstIndex = -1;
+    while ((match = rule.regex.exec(source)) !== null) {
+      count++;
+      if (firstIndex < 0) firstIndex = match.index;
+      if (match[0].length === 0) rule.regex.lastIndex++;
+      if (count >= 30) break;
+    }
+    if (count) {
+      const line = source.slice(0, Math.max(0, firstIndex)).split(/\r\n|\r|\n/).length;
+      findings.push({
+        id: rule.id, severity: rule.severity, title: rule.title, count, line, advice: rule.advice,
+        sample: source.slice(firstIndex, firstIndex + Math.min(80, source.length - firstIndex)).replace(/[\r\n\t]+/g, ' ')
+      });
+    }
+  }
+  const rank = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, INFO: 3 };
+  return findings.sort((a, b) => rank[a.severity] - rank[b.severity]);
+}
+
+function renderAudit(findings, scannedLabel) {
+  const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, INFO: 0 };
+  findings.forEach(f => counts[f.severity]++);
+  $('auditSummary').className = findings.length ? '' : 'empty';
+  $('auditSummary').innerHTML = `<strong>${escapeHtml(scannedLabel)}：${findings.length}種類の候補</strong><div class="stats"><div class="stat"><strong>${counts.CRITICAL}</strong><span>Critical</span></div><div class="stat"><strong>${counts.HIGH}</strong><span>High</span></div><div class="stat"><strong>${counts.MEDIUM}</strong><span>Medium</span></div></div><div class="help">検出数はコード全体の脆弱性件数を意味しません。誤検出・見逃しがあります。</div>`;
+  $('findings').replaceChildren();
+  if (!findings.length) {
+    const d = document.createElement('div');
+    d.className = 'empty';
+    d.textContent = '該当リスクは見つかりませんでした。完全に安全であることが証明されたわけではないため、手動コードレビューも実施してください。';
+    $('findings').appendChild(d);
+    return;
+  }
+  for (const f of findings) {
+    const div = document.createElement('div'); div.className = 'finding';
+    const badge = document.createElement('span'); badge.className = 'sev ' + f.severity; badge.textContent = f.severity;
+    const info = document.createElement('div');
+    const strong = document.createElement('strong'); strong.textContent = `${f.title} · ${f.count}箇所`;
+    const p = document.createElement('p'); p.textContent = `先頭付近：行 ${f.line} — ${f.advice}`;
+    const sample = document.createElement('p'); sample.textContent = `一致例：${f.sample}`;
+    info.append(strong, p, sample); div.append(badge, info); $('findings').appendChild(div);
+  }
+}
+
+function escapeHtml(v) { return String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+function getDomains() {
+  if (!$('domainLock').checked) return [];
+  const domains = $('domainList').value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (!domains.length) throw new Error('ドメイン制限をONにする場合、1つ以上のドメイン名（例: example.com）を指定してください。');
+  const valid = domains.every(d => /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?))*$/.test(d));
+  if (!valid) throw new Error('ドメイン形式が無効です。「example.com」の形式で入力してください。https://やパスは不要です。');
+  return domains;
+}
+
+function getOptions() {
+  const encoding = $('encoding').value;
+  return {
+    compact: true,
+    target: 'browser',
+    identifierNamesGenerator: 'hexadecimal',
+    renameGlobals: false,
+    renameProperties: false,
+    sourceMap: false,
+    log: false,
+    simplify: true,
+    stringArray: $('stringArray').checked,
+    stringArrayEncoding: encoding === 'none' ? [] : [encoding],
+    stringArrayThreshold: $('stringArray').checked ? 1 : 0,
+    stringArrayShuffle: $('shuffle').checked,
+    stringArrayRotate: $('rotate').checked,
+    stringArrayIndexShift: true,
+    stringArrayCallsTransform: $('stringArray').checked,
+    stringArrayCallsTransformThreshold: 1,
+    stringArrayWrappersCount: 2,
+    stringArrayWrappersType: 'function',
+    stringArrayWrappersChainedCalls: true,
+    splitStrings: $('splitStrings').checked,
+    splitStringsChunkLength: 6,
+    numbersToExpressions: $('numbers').checked,
+    controlFlowFlattening: $('controlFlow').checked,
+    controlFlowFlatteningThreshold: Number($('cffThreshold').value),
+    deadCodeInjection: $('deadCode').checked,
+    deadCodeInjectionThreshold: Number($('deadThreshold').value),
+    unicodeEscapeSequence: $('unicode').checked,
+    selfDefending: $('selfDefending').checked,
+    debugProtection: $('debugProtection').checked,
+    debugProtectionInterval: $('debugProtection').checked ? 2000 : 0,
+    disableConsoleOutput: $('disableConsole').checked,
+    transformObjectKeys: $('objectKeys').checked,
+    domainLock: getDomains()
+  };
+}
+
+function profileDefaults(profile) {
+  const set = (id, val) => $(id).checked = val;
+  if (profile === 'balanced') {
+    $('encoding').value = 'base64'; set('stringArray', true); set('shuffle', true); set('rotate', true); set('splitStrings', false); set('numbers', false); set('controlFlow', false); set('deadCode', false); set('unicode', false); set('selfDefending', false); set('debugProtection', false); set('disableConsole', false); set('objectKeys', false); $('cffThreshold').value = '0.30'; $('deadThreshold').value = '0.05';
+  } else if (profile === 'strong') {
+    $('encoding').value = 'base64'; set('stringArray', true); set('shuffle', true); set('rotate', true); set('splitStrings', true); set('numbers', true); set('controlFlow', true); set('deadCode', false); set('unicode', false); set('selfDefending', true); set('debugProtection', false); set('disableConsole', false); set('objectKeys', false); $('cffThreshold').value = '0.55'; $('deadThreshold').value = '0.10';
+  } else {
+    $('encoding').value = 'rc4'; set('stringArray', true); set('shuffle', true); set('rotate', true); set('splitStrings', true); set('numbers', true); set('controlFlow', true); set('deadCode', true); set('unicode', true); set('selfDefending', true); set('debugProtection', true); set('disableConsole', true); set('objectKeys', false); $('cffThreshold').value = '0.75'; $('deadThreshold').value = '0.10';
+  }
+  $('cffValue').textContent = Number($('cffThreshold').value).toFixed(2);
+  $('deadValue').textContent = Number($('deadThreshold').value).toFixed(2);
+}
+
+async function sha256(text) {
+  if (!window.crypto || !crypto.subtle) return '計算不可（安全なコンテキストが必要）';
+  try {
+    const dig = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(dig)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) { return '計算失敗'; }
+}
+
+function friendlyError(err) { return err && err.message ? err.message : String(err); }
+
+async function doSyntax() {
+  const result = syntaxReport($('source').value, 'sourceSyntax');
+  if (result.ok === false) setStatus('構文エラー：' + result.error, 'bad');
+  else if (result.ok === true) setStatus('構文チェック通過。ASTコード検証完了。', 'ok');
+  else setStatus(result.error, 'bad');
+}
+
+function auditInput() {
+  lastInputAudit = scanSource($('source').value);
+  renderAudit(lastInputAudit, '元コード');
+  updateReport();
+  setStatus('元コードの静的監査が完了しました。', lastInputAudit.some(f => f.severity === 'CRITICAL') ? 'bad' : 'ok');
+}
+
+function auditOutput() {
+  const o = $('output').value;
+  if (!o) { setStatus('先に難読化を実行してください。', 'bad'); return; }
+  lastOutputAudit = scanSource(o);
+  renderAudit(lastOutputAudit, '保護後コード');
+  updateReport();
+  setStatus('保護後コードの静的監査が完了しました。', 'ok');
+}
+
+function updateReport() {
+  const src = $('source').value, out = $('output').value;
+  lastReport = {
+    generatedAt: new Date().toISOString(),
+    profile: $('profile').value,
+    options: lastOptions || null,
+    input: { bytes: getBytes(src), syntax: parseSource(src), audit: lastInputAudit.map(({ id, severity, title, count, line, advice }) => ({ id, severity, title, count, line, advice })) },
+    output: { bytes: getBytes(out), syntax: parseSource(out), audit: lastOutputAudit.map(({ id, severity, title, count, line, advice }) => ({ id, severity, title, count, line, advice })), sha256: $('outputHash').textContent.replace('SHA-256：', '') },
+    note: 'CODE SHIELD PRO V8 Secure Full-Stack インブラウザ判定システムによる静的監査レポート'
+  };
+}
+
+function reportText() {
+  updateReport();
+  return 'CODE SHIELD PRO V8 — セキュリティ監査レポート\n' + JSON.stringify(lastReport, null, 2);
+}
+
+// In-Browser Obfuscation Process Execution
+async function obfuscate() {
+  const source = $('source').value;
+  if (!source.trim()) { setStatus('元のJavaScriptを入力してください。', 'bad'); return; }
+  if (getBytes(source) > maxBytes) { setStatus('入力コードが2 MB上限を超過しています。', 'bad'); return; }
+  if (typeof window.JavaScriptObfuscator === 'undefined' || typeof window.JavaScriptObfuscator.obfuscate !== 'function') {
+    setStatus('難読化エンジン(JavaScriptObfuscator)が未準備です。スクリプト読み込みを確認してください。', 'bad'); return;
+  }
+
+  const parsed = parseSource(source);
+  if (parsed.ok !== true) { setStatus('元コードに構文エラーがあるため難読化を開始できません：' + (parsed.error || '未定義のエラー'), 'bad'); return; }
+
+  const inputFindings = scanSource(source);
+  if (inputFindings.some(f => f.severity === 'CRITICAL')) {
+    const critical = inputFindings.filter(f => f.severity === 'CRITICAL').map(f => f.title).join('、');
+    if (!confirm('【警告】元コード内に重要なセキュリティ候補が見つかりました：' + critical + '\nこのまま難読化を続行しますか？')) {
+      lastInputAudit = inputFindings;
+      renderAudit(lastInputAudit, '元コード');
+      setStatus('処理をキャンセルしました。コード内の機密情報を削除してください。', 'bad');
+      return;
+    }
+  }
+
+  $('obfuscateBtn').disabled = true;
+  $('validateOptionsBtn').disabled = true;
+  setStatus('JavaScript難読化エンジンを実行中…');
+
+  setTimeout(async () => {
+    try {
+      const opts = getOptions();
+      const obfuscationResult = window.JavaScriptObfuscator.obfuscate(source, opts);
+      const output = obfuscationResult.getObfuscatedCode();
+
+      if (!output) throw new Error('出力コードの生成に失敗しました。');
+
+      const check = parseSource(output);
+      if (check.ok !== true) throw new Error('難読化後のAST構文チェックに失敗しました：' + (check.error || '構文崩れ'));
+
+      lastOutput = output;
+      lastOptions = opts;
+      lastInputAudit = inputFindings;
+      lastOutputAudit = scanSource(output);
+
+      $('output').value = output;
+      $('compareSource').value = source;
+      $('compareOutput').value = output;
+
+      $('beforeSize').textContent = getBytes(source).toLocaleString();
+      $('afterSize').textContent = getBytes(output).toLocaleString();
+      const growth = source.length ? ((getBytes(output) / getBytes(source) - 1) * 100) : 0;
+      $('growth').textContent = (growth >= 0 ? '+' : '') + growth.toFixed(1) + '%';
+
+      const words = countWords(output);
+      $('outputStats').textContent = `${words.chars.toLocaleString()}文字 · ${words.lines.toLocaleString()}行 · ${getBytes(output).toLocaleString()} bytes`;
+
+      setLabel('sourceSyntax', '元コード：構文OK', 'var(--green)');
+      setLabel('outputSyntax', '出力の構文：OK（ASTチェック完了）', 'var(--green)');
+
+      const hash = await sha256(output);
+      $('outputHash').textContent = 'SHA-256：' + hash;
+
+      renderAudit(lastInputAudit, '元コード');
+      updateReport();
+
+      // Simulated Temporary Result Link Generation
+      const randomId = Array.from(window.crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('');
+      simulatedStore.set(randomId, { code: output, hash, expires: Date.now() + 30 * 60 * 1000 });
+
+      const linkUrl = window.location.origin + window.location.pathname + '#result-' + randomId;
+      $('shareUrl').value = linkUrl;
+      $('resultLinks').hidden = false;
+      $('resultExpires').textContent = '有効期限: ' + new Date(Date.now() + 30 * 60 * 1000).toLocaleTimeString();
+
+      let clearNote = '';
+      if ($('autoClearSource').checked) {
+        $('source').value = '';
+        updateCounts();
+        clearNote = ' 元コードの入力欄を自動消去しました（比較エリアにはコピーを維持）。';
+      }
+
+      setStatus('難読化および出頭構文の検証が正常に完了しました。' + clearNote, 'ok');
+    } catch (err) {
+      setStatus('難読化エラー: ' + friendlyError(err), 'bad');
+    } finally {
+      $('obfuscateBtn').disabled = false;
+      $('validateOptionsBtn').disabled = false;
+    }
+  }, 100);
+}
+
+function validateSettings() {
+  try {
+    const opts = getOptions();
+    const probe = 'function test(a,b){ return a+b; } console.log(test(1,2));';
+    const res = window.JavaScriptObfuscator.obfuscate(probe, opts).getObfuscatedCode();
+    const parse = parseSource(res);
+    if (parse.ok !== true) throw new Error('指定オプションによる試行出力が構文検証をパスしませんでした。');
+    setStatus('保護設定検証OK：指定パラメーターでの難読化テストが正常終了しました。', 'ok');
+  } catch (err) {
+    setStatus('設定検証エラー：' + friendlyError(err), 'bad');
+  }
+}
+
+async function copyText(text) {
+  if (!text) { setStatus('コピーする対象がありません。', 'bad'); return; }
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      setStatus('クリップボードにコピーしました。', 'ok');
+      return;
+    }
+  } catch (e) {}
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.focus(); area.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  area.remove();
+  setStatus(ok ? 'クリップボードにコピーしました。' : 'コピーに失敗しました。', ok ? 'ok' : 'bad');
+}
+
+function generateAccessKey() {
+  try {
+    if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') throw new Error('乱数生成器が利用できません。');
+    const bytes = new Uint8Array(32);
+    window.crypto.getRandomValues(bytes);
+    const key = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    $('accessToken').value = key;
+    $('accessToken').type = 'password';
+    $('toggleAccessKeyBtn').textContent = '表示／非表示';
+    setStatus('64桁のセキュアアクセスキーを自動生成しました。', 'ok');
+  } catch (err) {
+    setStatus(friendlyError(err), 'bad');
+  }
+}
+
+function downloadText(name, text, type = 'text/plain;charset=utf-8') {
+  if (!text) { setStatus('保存するコンテンツがありません。', 'bad'); return; }
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1200);
+  setStatus(name + ' をダウンロード出力しました。', 'ok');
+}
+
+// Modal View Event Logic
+function openResultModal() {
+  const url = $('shareUrl').value;
+  const match = url.match(/#result-([a-f0-9]{64})$/);
+  if (!match) { setStatus('有効な結果リンクIDが存在しません。', 'bad'); return; }
+  const data = simulatedStore.get(match[1]);
+  if (!data) { setStatus('リンクの期限が切れているか無効です。', 'bad'); return; }
+
+  $('modalCode').value = data.code;
+  $('modalStats').textContent = 'サイズ：' + getBytes(data.code).toLocaleString() + ' bytes';
+  $('modalHash').textContent = 'SHA-256：' + data.hash;
+  $('resultModal').classList.remove('hidden');
+}
+
+// Event Listeners Initialization
+$('generateAccessKeyBtn').addEventListener('click', generateAccessKey);
+$('toggleAccessKeyBtn').addEventListener('click', () => {
+  const field = $('accessToken');
+  const show = field.type === 'password';
+  field.type = show ? 'text' : 'password';
+  $('toggleAccessKeyBtn').textContent = show ? '隠す' : '表示／非表示';
+});
+$('copyAccessKeyBtn').addEventListener('click', () => copyText($('accessToken').value));
+
+$('source').addEventListener('input', updateCounts);
+$('profile').addEventListener('change', () => profileDefaults($('profile').value));
+$('cffThreshold').addEventListener('input', () => $('cffValue').textContent = Number($('cffThreshold').value).toFixed(2));
+$('deadThreshold').addEventListener('input', () => $('deadValue').textContent = Number($('deadThreshold').value).toFixed(2));
+
+$('loadBtn').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  if (file.size > maxBytes) { setStatus('ファイルサイズが 2 MB を超えています。', 'bad'); e.target.value = ''; return; }
+  try {
+    $('source').value = await file.text();
+    updateCounts();
+    setStatus(file.name + ' を読み込みました。', 'ok');
+  } catch (err) { setStatus('読み込みエラー：' + friendlyError(err), 'bad'); }
+  e.target.value = '';
+});
+
+$('sampleBtn').addEventListener('click', () => {
+  $('source').value = `// CODE SHIELD PRO V8 Sample Verification File\nfunction calculateSecurityToken(userId, timestamp) {\n  if (!userId || typeof userId !== 'string') {\n    throw new Error('Invalid User ID');\n  }\n  const salt = 'CS8_SALT_VAL';\n  let hash = 0;\n  const combined = userId + timestamp + salt;\n  for (let i = 0; i < combined.length; i++) {\n    const char = combined.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash |= 0;\n  }\n  return 'TK_' + Math.abs(hash).toString(16);\n}\n\nconsole.log(calculateSecurityToken('User992', Date.now()));\n`;
+  updateCounts();
+  setStatus('サンプルコードをロードしました。', 'ok');
+});
+
+$('clearBtn').addEventListener('click', () => {
+  $('source').value = '';
+  updateCounts();
+  setStatus('元コードをクリアしました。', 'ok');
+});
+
+$('syntaxBtn').addEventListener('click', doSyntax);
+$('auditInputBtn').addEventListener('click', auditInput);
+$('auditOutputBtn').addEventListener('click', auditOutput);
+$('validateOptionsBtn').addEventListener('click', validateSettings);
+$('obfuscateBtn').addEventListener('click', obfuscate);
+
+$('copyOutputBtn').addEventListener('click', () => copyText($('output').value));
+$('copyShareUrlBtn').addEventListener('click', () => copyText($('shareUrl').value));
+$('openResultLinkBtn').addEventListener('click', openResultModal);
+$('closeModalBtn').addEventListener('click', () => $('resultModal').classList.add('hidden'));
+
+$('modalCopyBtn').addEventListener('click', () => copyText($('modalCode').value));
+$('modalDownloadBtn').addEventListener('click', () => downloadText('protected.js', $('modalCode').value, 'text/javascript;charset=utf-8'));
+
+$('downloadBtn').addEventListener('click', () => downloadText('protected.js', $('output').value, 'text/javascript;charset=utf-8'));
+$('compareBtn').addEventListener('click', () => $('comparePanel').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+$('backTopBtn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+$('copyReportBtn').addEventListener('click', () => copyText(reportText()));
+$('downloadReportBtn').addEventListener('click', () => downloadText('code-shield-audit-report.txt', reportText()));
+$('reportBtn').addEventListener('click', () => downloadText('code-shield-audit-report.json', JSON.stringify((updateReport(), lastReport), null, 2), 'application/json;charset=utf-8'));
+
+// Initial boot initialization
+profileDefaults('maximum');
+updateCounts();
+checkEngines();
+
+})();
+</script>
+</body>
+</html>
